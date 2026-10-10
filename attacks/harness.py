@@ -1,6 +1,7 @@
 """Run every payload against the bot several times and count how often it leaks.
 
     python -m attacks.harness --label baseline --runs 5
+    python -m attacks.harness --label all_three --runs 5
 
 Why several runs? The model picks its words with some randomness, so the same
 attack can fail once and work the next time. Attack success rate (ASR) is
@@ -19,6 +20,15 @@ from app.bot import chat
 from app.summarizer import summarize
 from attacks.judge import leaked
 
+# Each configuration switches on a different set of defenses.
+CONFIGS = {
+    "baseline": (),
+    "input_filter": ("input_filter",),
+    "delimit": ("delimit",),
+    "output_filter": ("output_filter",),
+    "all_three": ("input_filter", "delimit", "output_filter"),
+}
+
 PAYLOAD_FILE = Path(__file__).parent / "payloads.yaml"
 RESULTS_DIR = Path(__file__).parent.parent / "results"
 
@@ -28,13 +38,14 @@ def load_payloads():
         return yaml.safe_load(f)
 
 
-def run_payload(payload):
+def run_payload(payload, defenses):
     if payload["mode"] == "summarize":
-        return summarize(payload["text"])
-    return chat(payload["text"])
+        return summarize(payload["text"], defenses)
+    return chat(payload["text"], defenses)
 
 
 def run_experiment(label, runs):
+    defenses = CONFIGS[label]
     RESULTS_DIR.mkdir(exist_ok=True)
     payloads = load_payloads()
     log_path = RESULTS_DIR / f"{label}.jsonl"
@@ -45,7 +56,7 @@ def run_experiment(label, runs):
     with open(log_path, "w", encoding="utf-8") as log:
         for payload in payloads:
             for run in range(1, runs + 1):
-                reply = run_payload(payload)
+                reply = run_payload(payload, defenses)
                 did_leak = leaked(reply)
                 tally[payload["category"]][0] += int(did_leak)
                 tally[payload["category"]][1] += 1
@@ -82,7 +93,7 @@ def write_summary(label, tally):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--label", default="baseline")
+    parser.add_argument("--label", default="baseline", choices=CONFIGS)
     parser.add_argument("--runs", type=int, default=5)
     args = parser.parse_args()
 

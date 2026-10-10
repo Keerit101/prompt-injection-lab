@@ -5,7 +5,8 @@ Run it by hand to try attacks yourself:
 """
 import ollama
 
-from app.config import MODEL, SYSTEM_PROMPT
+from app.config import MODEL, REFUSAL, SECRET, SYSTEM_PROMPT
+from defenses import delimiting, input_filter, output_filter
 
 
 def call_model(system_prompt, user_message):
@@ -26,8 +27,24 @@ def call_model(system_prompt, user_message):
     return response["message"]["content"]
 
 
-def chat(user_message):
-    return call_model(SYSTEM_PROMPT, user_message)
+def build_system_prompt(defenses):
+    if "delimit" in defenses:
+        return SYSTEM_PROMPT + delimiting.HARDENING
+    return SYSTEM_PROMPT
+
+
+def chat(user_message, defenses=()):
+    """Answer one message. `defenses` is a collection of names to switch on:
+    "input_filter", "delimit", "output_filter".
+    """
+    if "input_filter" in defenses and input_filter.is_suspicious(user_message):
+        return REFUSAL
+
+    reply = call_model(build_system_prompt(defenses), user_message)
+
+    if "output_filter" in defenses and output_filter.leaks_secret(reply, SECRET):
+        return REFUSAL
+    return reply
 
 
 if __name__ == "__main__":
