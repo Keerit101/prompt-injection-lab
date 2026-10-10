@@ -1,38 +1,34 @@
-# Project 1 — Prompt Injection
+# Prompt Injection Lab
 
-## Goal
-Build a small LLM-powered app, break it with prompt injection, then measure how well different defenses hold up.
+A small LLM chatbot with a fake secret, a set of prompt-injection attacks against it, and three defenses, with measured results.
 
-## Background to cover in the write-up
-- **Direct injection:** the user types instructions that override the system prompt ("ignore previous instructions…")
-- **Indirect injection:** malicious instructions hidden in content the model reads (web pages, emails, PDFs, RAG documents)
-- Why it's hard to fix: LLMs don't reliably separate instructions from data
-- Reference: OWASP Top 10 for LLM Applications — LLM01: Prompt Injection
+**Headline result:** with no defenses, 16.8% of attack runs leaked the secret, and 56% of attacks hidden inside a document the bot was asked to summarize did. See [results/REPORT.md](results/REPORT.md) for the numbers, the false-positive cost of each defense, and what the experiment does *not* prove.
 
-## Tasks
-1. **Target app** (`app/`)
-   - A simple assistant (CLI or Flask) with a system prompt containing a fake secret (e.g. `FLAG{...}`) and a rule never to reveal it
-   - A "summarize this document" feature, so there's an indirect injection path
-2. **Attacks** (`attacks/`)
-   - `payloads.yaml` with categories: instruction override, role-play/jailbreak, encoding (base64, leetspeak), delimiter confusion, indirect (hidden in a document)
-   - `harness.py`: sends each payload N times and checks if the secret leaked or the rule broke, then outputs attack success rate (ASR)
-3. **Defenses** (`defenses/`)
-   - Input filtering (keyword/regex or a classifier)
-   - Prompt hardening: delimiters / "spotlighting" untrusted content
-   - Output filtering: block responses containing the secret
-   - (Stretch) LLM-as-judge / dual-LLM pattern
-4. **Results** (`results/`)
-   - ASR table: payload category × defense
-   - Discussion: what worked, what got bypassed, trade-offs (false positives, latency)
+> Scope: everything runs against my own bot, on my own machine, with a fake secret.
 
-## Deliverables
-- [ ] Working vulnerable app
-- [ ] 20+ payloads across 5 categories
-- [ ] Automated harness with ASR output
-- [ ] 3 defenses + before/after comparison
-- [ ] `results/REPORT.md`
+## How it works
 
-## Schedule (week of Oct 12, 2026)
+| Folder | What's in it |
+| --- | --- |
+| `app/` | The target bot (`bot.py`), the document summarizer (`summarizer.py`), an HTTP wrapper (`server.py`) |
+| `attacks/` | 25 main payloads, 15 held-out payloads, the harness, the judge, and a false-positive check |
+| `defenses/` | Input filter, prompt hardening + delimiting, output filter |
+| `tests/` | Unit tests for the judge and the defenses (no model needed) |
+| `results/` | Raw replies (`*.jsonl`), summaries (`*_summary.csv`) and the report |
 
-- **Mon:** set up env + Ollama, build the vulnerable app, write 10+ direct payloads
-- **Tue:** add indirect injection, run harness for baseline ASR, implement 3 defenses, write `results/REPORT.md`
+[EXPLAINED.md](EXPLAINED.md) walks through every file in plain English.
+
+## Run it
+
+Needs Python 3.12 and [Ollama](https://ollama.com) with the model pulled (`ollama pull llama3.2`).
+
+```
+python -m venv .venv
+.venv\Scripts\pip install -r requirements.txt
+python -m app.bot                                   # chat with the bot and try attacks yourself
+python -m attacks.harness --label baseline --runs 5 # run all attacks, no defenses
+python -m attacks.harness --label all_three         # run all attacks with every defense on
+python -m unittest discover tests
+```
+
+Labels: `baseline`, `input_filter`, `delimit`, `output_filter`, `all_three`. Add `--heldout` to use the held-out attacks.
