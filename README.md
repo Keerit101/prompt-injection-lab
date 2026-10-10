@@ -18,6 +18,16 @@ A small LLM chatbot with a fake secret, a set of prompt-injection attacks agains
 
 [EXPLAINED.md](EXPLAINED.md) walks through every file in plain English.
 
+## Evidence
+
+Every reply behind every number is saved in `results/` (`<label>.jsonl`, one reply per line, with whether it leaked) next to its summary table (`<label>_summary.csv`). One command re-checks them without a model:
+
+```
+python -m attacks.verify
+```
+
+It recounts the leaks from the raw replies, compares them with the summary tables, and re-runs the judge on all 1,000 saved replies. All 10 experiments match, with 0 disagreements.
+
 ## Run it
 
 Needs Python 3.12 and [Ollama](https://ollama.com) with the model pulled (`ollama pull llama3.2`).
