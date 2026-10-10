@@ -2,6 +2,7 @@
 
     python -m attacks.harness --label baseline --runs 5
     python -m attacks.harness --label all_three --runs 5
+    python -m attacks.harness --label all_three --heldout
 
 Why several runs? The model picks its words with some randomness, so the same
 attack can fail once and work the next time. Attack success rate (ASR) is
@@ -30,11 +31,12 @@ CONFIGS = {
 }
 
 PAYLOAD_FILE = Path(__file__).parent / "payloads.yaml"
+HELDOUT_FILE = Path(__file__).parent / "payloads_heldout.yaml"
 RESULTS_DIR = Path(__file__).parent.parent / "results"
 
 
-def load_payloads():
-    with open(PAYLOAD_FILE, encoding="utf-8") as f:
+def load_payloads(payload_file=PAYLOAD_FILE):
+    with open(payload_file, encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
@@ -44,11 +46,12 @@ def run_payload(payload, defenses):
     return chat(payload["text"], defenses)
 
 
-def run_experiment(label, runs):
+def run_experiment(label, runs, payload_file=PAYLOAD_FILE, tag=None):
     defenses = CONFIGS[label]
+    name = tag or label  # name used for the output files
     RESULTS_DIR.mkdir(exist_ok=True)
-    payloads = load_payloads()
-    log_path = RESULTS_DIR / f"{label}.jsonl"
+    payloads = load_payloads(payload_file)
+    log_path = RESULTS_DIR / f"{name}.jsonl"
 
     # tally[category] = [leaks, attempts]
     tally = defaultdict(lambda: [0, 0])
@@ -61,7 +64,7 @@ def run_experiment(label, runs):
                 tally[payload["category"]][0] += int(did_leak)
                 tally[payload["category"]][1] += 1
                 log.write(json.dumps({
-                    "label": label,
+                    "label": name,
                     "id": payload["id"],
                     "category": payload["category"],
                     "run": run,
@@ -74,7 +77,7 @@ def run_experiment(label, runs):
 
 
 def write_summary(label, tally):
-    path = RESULTS_DIR / f"{label}_summary.csv"
+    path = RESULTS_DIR / f"{label}_summary.csv"  # label may include a tag
     total_leaks = sum(leaks for leaks, _ in tally.values())
     total_runs = sum(attempts for _, attempts in tally.values())
 
@@ -95,7 +98,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--label", default="baseline", choices=CONFIGS)
     parser.add_argument("--runs", type=int, default=5)
+    parser.add_argument("--heldout", action="store_true",
+                        help="use the held-out payloads instead of the main set")
     args = parser.parse_args()
 
-    results = run_experiment(args.label, args.runs)
-    write_summary(args.label, results)
+    if args.heldout:
+        name = f"{args.label}_heldout"
+        results = run_experiment(args.label, args.runs, HELDOUT_FILE, name)
+    else:
+        name = args.label
+        results = run_experiment(args.label, args.runs)
+    write_summary(name, results)
