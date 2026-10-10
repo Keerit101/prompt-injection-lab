@@ -1,4 +1,4 @@
-"""Generate the evidence images in docs/images/ from the saved results.
+"""Generate the evidence images in evidence/images/ from the saved results.
 
     python -m attacks.make_images
 
@@ -25,7 +25,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 REPO = Path(__file__).resolve().parent.parent
 RESULTS = REPO / "results"
-OUT = REPO / "docs" / "images"
+OUT = REPO / "evidence" / "images"
 CONSOLAS = r"C:\Windows\Fonts\consola.ttf"
 ARIAL = r"C:\Windows\Fonts\arial.ttf"
 ARIAL_BOLD = r"C:\Windows\Fonts\arialbd.ttf"
