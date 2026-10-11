@@ -68,3 +68,7 @@ python -m unittest discover tests
 ```
 
 Labels: `baseline`, `input_filter`, `delimit`, `output_filter`, `all_three`. Add `--heldout` to use the held-out attacks.
+
+## Acknowledgements
+
+Thanks to [Delphine Winter](https://github.com/delphinewinter) for the support while I worked on this project.
