@@ -6,6 +6,18 @@ A small LLM chatbot with a fake secret, a set of prompt-injection attacks agains
 
 > Scope: everything runs against my own bot, on my own machine, with a fake secret.
 
+## Check the results in one minute
+
+You don't need the model or a GPU to check the numbers above. Every reply from every experiment is saved in `results/`, and one command re-checks them:
+
+```
+python -m venv .venv
+.venv\Scripts\pip install -r requirements.txt
+python -m attacks.verify
+```
+
+It should end with `all checks passed`. Then look through [evidence/README.md](evidence/README.md) for the charts and real example replies.
+
 ## How it works
 
 | Folder | What's in it |
