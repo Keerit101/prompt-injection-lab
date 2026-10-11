@@ -71,4 +71,4 @@ Labels: `baseline`, `input_filter`, `delimit`, `output_filter`, `all_three`. Add
 
 ## Acknowledgements
 
-Thanks to [Delphine Winter](https://github.com/delphinewinter) for feedback on the project idea.
+Thanks to [Delphine Winter](https://github.com/delphinewinter) for feedback on the project idea and for having a look at the project and its evidence.
